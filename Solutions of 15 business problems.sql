@@ -42,19 +42,11 @@ WHERE release_year = 2020
 
 -- 4. Find the top 5 countries with the most content on Netflix
 
-SELECT * 
-FROM
-(
-	SELECT 
-		-- country,
-		UNNEST(STRING_TO_ARRAY(country, ',')) as country,
-		COUNT(*) as total_content
-	FROM netflix
-	GROUP BY 1
-)as t1
-WHERE country IS NOT NULL
-ORDER BY total_content DESC
-LIMIT 5
+select country,count(country)as maxprdcdcntry from netflix 
+group by country
+order by 2 desc
+limit 5
+
 
 
 -- 5. Identify the longest movie
@@ -113,19 +105,12 @@ GROUP BY 1
 -- return top 5 year with highest avg content release !
 
 
-SELECT 
-	country,
-	release_year,
-	COUNT(show_id) as total_release,
-	ROUND(
-		COUNT(show_id)::numeric/
-								(SELECT COUNT(show_id) FROM netflix WHERE country = 'India')::numeric * 100 
-		,2
-		)
-		as avg_release
-FROM netflix
-WHERE country = 'India' 
-GROUP BY country, 2
+select extract(YEAR from (to_date(date_added , 'month dd,YYYY'))) as newyearfrmt,count(*) as newavg,
+round(count(*)::numeric/(select count(*) from netflix 
+where country='India')::numeric *100,2) as avargeyear
+from netflix 
+where country='India'
+group by 1
 ORDER BY avg_release DESC 
 LIMIT 5
 
@@ -170,22 +155,19 @@ the description field. Label content containing these keywords as 'Bad' and all 
 content as 'Good'. Count how many items fall into each category.
 */
 
+with new_table
+as 
+(select*,
+case 
+	when description ILIKE'%kill%' or description ILIKE '%violence%' then 'bad_cntnt'
+	else 'good-contnt'
+end categorys
+from netflix n) 
+select categorys,
+count(*) as total_cntnt
+from new_table
+group by 1
 
-SELECT 
-    category,
-	TYPE,
-    COUNT(*) AS content_count
-FROM (
-    SELECT 
-		*,
-        CASE 
-            WHEN description ILIKE '%kill%' OR description ILIKE '%violence%' THEN 'Bad'
-            ELSE 'Good'
-        END AS category
-    FROM netflix
-) AS categorized_content
-GROUP BY 1,2
-ORDER BY 2
 
 
 
